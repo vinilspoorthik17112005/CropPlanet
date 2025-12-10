@@ -1,0 +1,147 @@
+@'
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Shopping Cart - Crop Planet{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <h1 class="mb-4">Shopping Cart</h1>
+
+  {% if cart.items.all %}
+    <div class="row">
+      <!-- Cart Items -->
+      <div class="col-lg-8 mb-4">
+        <div class="card">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Product</th>
+                  <th>Price</th>
+                  <th>Quantity</th>
+                  <th>Total</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in cart.items.all %}
+                <tr class="cart-item" data-item-id="{{ item.id }}">
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;" class="me-3">
+                      <div>
+                        <h6 class="mb-0"><a href="{% url 'products' item.product.id %}" class="text-dark text-decoration-none">{{ item.product.name }}</a></h6>
+                        <small class="text-muted">ID: #{{ item.product.id }}</small>
+                      </div>
+                    </div>
+                  </td>
+                  <td>${{ item.product.price }}</td>
+                  <td>
+                    <input type="number" class="form-control qty-input" value="{{ item.quantity }}" min="1" max="1000" style="width: 70px;">
+                  </td>
+                  <td class="item-total">${{ item.get_cost }}</td>
+                  <td>
+                    <button type="button" class="btn btn-sm btn-danger remove-item" data-item-id="{{ item.id }}">Remove</button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cart Summary -->
+      <div class="col-lg-4">
+        <div class="card sticky-top" style="top: 20px;">
+          <div class="card-body">
+            <h5 class="card-title">Order Summary</h5>
+            <hr>
+            <div class="d-flex justify-content-between mb-2">
+              <span>Subtotal:</span>
+              <span id="subtotal">${{ cart.get_total }}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span>Shipping:</span>
+              <span>$0.00</span>
+            </div>
+            <div class="d-flex justify-content-between mb-3">
+              <span>Tax:</span>
+              <span>$0.00</span>
+            </div>
+            <hr>
+            <div class="d-flex justify-content-between mb-3">
+              <strong>Total:</strong>
+              <strong id="total">${{ cart.get_total }}</strong>
+            </div>
+            <button class="btn btn-primary w-100 mb-2">Proceed to Checkout</button>
+            <a href="{% url 'home' %}" class="btn btn-outline-secondary w-100">Continue Shopping</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  {% else %}
+    <div class="alert alert-info text-center py-5">
+      <h4>Your cart is empty</h4>
+      <p>Start shopping to add items to your cart!</p>
+      <a href="{% url 'home' %}" class="btn btn-primary">Continue Shopping</a>
+    </div>
+  {% endif %}
+</div>
+
+<script>
+  // Update quantity
+  document.querySelectorAll('.qty-input').forEach(input => {
+    input.addEventListener('change', function() {
+      const itemId = this.closest('.cart-item').dataset.itemId;
+      const quantity = this.value;
+      
+      fetch(`/cart/update/${itemId}/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: 'quantity=' + quantity
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          document.getElementById('subtotal').innerText = '$' + data.cart_total.toFixed(2);
+          document.getElementById('total').innerText = '$' + data.cart_total.toFixed(2);
+          this.closest('.cart-item').querySelector('.item-total').innerText = '$' + data.item_cost.toFixed(2);
+        }
+      });
+    });
+  });
+
+  // Remove item
+  document.querySelectorAll('.remove-item').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const itemId = this.dataset.itemId;
+      if (confirm('Remove this item?')) {
+        fetch(`/cart/remove/${itemId}/`, {
+          method: 'POST',
+          headers: {'X-CSRFToken': '{{ csrf_token }}'}
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            location.reload();
+          }
+        });
+      }
+    });
+  });
+</script>
+
+<style>
+  @media (max-width: 768px) {
+    .table { font-size: 0.9rem; }
+    .sticky-top { position: static !important; margin-top: 20px; }
+  }
+</style>
+{% endblock %}
+'@ | Set-Content 'd:\Next Gen Employability Program\crop_planet\myproject\cropplanet\templates\cart.html'
